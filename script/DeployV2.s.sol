@@ -16,31 +16,31 @@ interface IUniswapV2Router02 {
 }
 
 /// @title DeployV2 — Deploy the full Uniswap V2 stack to a new chain
-/// @notice Deployment order: WETH9 → UniswapV2Factory → UniswapV2Router02
+/// @notice Deployment order: WMON → UniswapV2Factory → UniswapV2Router02
 ///
 /// Usage (local anvil):
 ///   forge script script/DeployV2.s.sol --broadcast --rpc-url http://127.0.0.1:8545 --private-key <KEY>
 ///
-/// Usage (live chain, with existing WETH):
-///   WETH=0x... FEE_TO_SETTER=0x... forge script script/DeployV2.s.sol --broadcast --rpc-url <RPC> --private-key <KEY>
+/// Usage (live chain, with existing WMON):
+///   WMON=0x... FEE_TO_SETTER=0x... forge script script/DeployV2.s.sol --broadcast --rpc-url <RPC> --private-key <KEY>
 ///
 /// Environment variables:
-///   WETH            — address of the existing wrapped-native token; if unset, a new WETH9 is deployed
+///   WMON            — address of the existing wrapped-native token; if unset, a new WMON is deployed
 ///   FEE_TO_SETTER   — address that will control the protocol fee switch; defaults to the deployer
 contract DeployV2 is Script {
     function run() external {
         address deployer = msg.sender;
         address feeToSetter = vm.envOr("FEE_TO_SETTER", deployer);
-        address wethAddr = vm.envOr("WETH", address(0));
+        address wmonAddr = vm.envOr("WMON", address(0));
 
         vm.startBroadcast();
 
-        // 1. WETH9 — deploy only if no existing address was provided
-        if (wethAddr == address(0)) {
-            wethAddr = deployCode("WETH9.sol:WETH9");
-            console.log("WETH9 deployed at:", wethAddr);
+        // 1. WMON — deploy only if no existing address was provided
+        if (wmonAddr == address(0)) {
+            wmonAddr = deployCode("WMON.sol:WMON");
+            console.log("WMON deployed at:", wmonAddr);
         } else {
-            console.log("Using existing WETH at:", wethAddr);
+            console.log("Using existing WETH at:", wmonAddr);
         }
 
         // 2. UniswapV2Factory
@@ -53,7 +53,7 @@ contract DeployV2 is Script {
         console.logBytes32(initCodeHash);
 
         // 3. UniswapV2Router02
-        address routerAddr = deployCode("UniswapV2Router02.sol:UniswapV2Router02", abi.encode(factoryAddr, wethAddr));
+        address routerAddr = deployCode("UniswapV2Router02.sol:UniswapV2Router02", abi.encode(factoryAddr, wmonAddr));
         console.log("UniswapV2Router02 deployed at:", routerAddr);
 
         vm.stopBroadcast();
@@ -64,10 +64,10 @@ contract DeployV2 is Script {
 
         require(factory.feeToSetter() == feeToSetter, "factory feeToSetter mismatch");
         require(router.factory() == factoryAddr, "router factory mismatch");
-        require(router.WETH() == wethAddr, "router WETH mismatch");
+        require(router.WETH() == wmonAddr, "router WMON mismatch");
 
         console.log("\n=== Deployment Summary ===");
-        console.log("  WETH9:              ", wethAddr);
+        console.log("  WMON:              ", wmonAddr);
         console.log("  UniswapV2Factory:   ", factoryAddr);
         console.log("  UniswapV2Router02:  ", routerAddr);
         console.log("  feeToSetter:        ", feeToSetter);
